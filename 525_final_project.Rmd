@@ -1,0 +1,114 @@
+---
+title: "525_Final_Project"
+output: pdf_document
+author: ''
+date: "2025-04-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##Introduction to Wine and determinants to its quality
+
+##Introduction to the Dataset
+
+##Goal of this project
+
+Article source: https://sensorex.com/ph-improve-taste-color-wine/#:~:text=Understanding%20the%20basics%20of%20pH%20in%20wine%20making,-All%20wines%20are&text=White%20wines%20are%20usually%20more,can%20prevent%20problems%20from%20emerging.
+Article claim: acidity is crucial to wine quality 
+Hypothesis: wine quality varies with acidity 
+
+Article source: https://www.compoundchem.com/2014/05/28/redwinechemicals/
+Article claim: red wine tends to have a higher acid level, as it gives rise of the color
+Hypothesis: red wine have a higher acid level
+
+Article source: https://www.wineinvestment.com/us/learn/magazine/2019/06/wines-alcohol-levels-explained/
+Article claim: alcohol content has no affect in quality of wine
+Hypothesis: alcohol content has no affect in quality of wine
+
+add-ons: determine the amount of affect of all the other quantities in dataset on quality of wine
+
+##Load Data
+```{r}
+red_wine <- winequality_red
+white_wine <- winequality_white
+wine <- rbind(
+  cbind(type = "red",   red_wine),
+  cbind(type = "white", white_wine)
+)
+```
+
+##Hypothesis 1
+```{r}
+wine$good <- ifelse(wine$quality >= 7, 1, 0)
+```
+Univariate Linear Regression: quality ~ pH
+```{r}
+lm_acid <- lm(quality ~ fixed.acidity, data = wine)
+summary(lm_acid)
+```
+
+```{r}
+lm2_acid <- lm(
+  quality ~ fixed.acidity
+           + volatile.acidity
+           + citric.acid
+           + residual.sugar
+           + chlorides
+           + free.sulfur.dioxide
+           + total.sulfur.dioxide
+           + density
+           + pH
+           + sulphates
+           + alcohol,
+  data = wine
+)
+summary(lm2_acid)
+```
+```{r}
+glm_acid <- glm(good ~ fixed.acidity, data = wine, family = binomial)
+summary(glm_acid)
+exp(coef(glm_acid))
+
+glm2_acid <- glm(
+  good ~ fixed.acidity
+         + volatile.acidity
+         + citric.acid
+         + residual.sugar
+         + chlorides
+         + free.sulfur.dioxide
+         + total.sulfur.dioxide
+         + density
+         + pH
+         + sulphates
+         + alcohol,
+  data = wine, family = binomial
+)
+summary(glm2_acid)
+exp(coef(glm2_acid))
+```
+
+lm: 
+Every 1 g/dm³ increase in fixed acidity predicts a 0.052-point drop in quality, and this negative effect is highly significant.
+higher fixed acidity is associated with slightly lower quality ratings—but it’s a very weak predictor.
+
+lm2:
+After controlling for all the other chemistry (volatile acidity, pH, sulphates, alcohol, etc.), a 1 g/dm³ rise in fixed acidity now predicts a +0.068-point increase in quality.
+fixed acidity has a modest, positive effect on quality. The sign flip from the univariate model shows it was acting as a “suppressor” variable—its raw correlation with quality is negative, but holding other acids and pH constant, a bit more fixed acidity actually improves scores.
+
+glm:
+Each 1 g/dm³ increase in fixed acidity reduces the odds of a “good” wine (quality ≥ 7) by ~10%.
+higher fixed acidity slightly lowers the odds of a good rating—but it’s a weak classifier.
+
+glm2:
+Controlling for all other chemistry, each 1 g/dm³ rise in fixed acidity increases the odds of “good” by ~55%.
+Major contributors (all p < 1e-8): volatile acidity (OR ≈ 0.0347), pH (OR ≈ 10.9), sulphates (OR ≈ 12), alcohol (OR ≈ 1.78).
+fixed acidity is a strong positive predictor of good‐wine status—again the sign reversal highlights collinearity with other acids.
+
+summary:
+Raw (univariate) effects of fixed acidity are small and negative.
+Conditional (multivariate) effects are moderate and positive once you account for volatile acidity, pH, and the other compounds.
+acidity does matter for wine quality—but you must distinguish which acidity measure and in which context. Fixed acidity’s true relationship to quality is positive, but only emerges when you control for the broader chemical profile.
+
+##Conclusion
